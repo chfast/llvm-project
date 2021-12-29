@@ -433,3 +433,19 @@ define void @sub_U256_without_i128_or_recursive(%uint256* sret(%uint256) %0, %ui
   store i64 %37, i64* %41, align 8
   ret void
 }
+
+define i1 @ult2x64(i64 %x0, i64 %x1, i64 %y0, i64 %y1) nounwind {
+; CHECK-LABEL: ult2x64:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    cmpq %rdx, %rdi
+; CHECK-NEXT:    sbbq %rcx, %rsi
+; CHECK-NEXT:    setb %al
+; CHECK-NEXT:    retq
+  %b0 = icmp ult i64 %x0, %y0
+  %d1 = sub i64 %x1, %y1
+  %b10 = icmp ult i64 %x1, %y1
+  %b0z = zext i1 %b0 to i64
+  %b11 = icmp ult i64 %d1, %b0z
+  %b1 = or i1 %b10, %b11
+  ret i1 %b1
+}
