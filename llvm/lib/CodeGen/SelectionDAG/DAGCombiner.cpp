@@ -2746,6 +2746,8 @@ SDValue DAGCombiner::visitADDSAT(SDNode *N) {
   return SDValue();
 }
 
+/// Checks if value V is a carry/borrow bit, i.e. if it comes from the carry
+/// result of any node producing carry/borrow: ADDCARRY, SUBCARRY, UADDO, USUBO.
 static SDValue getAsCarry(const TargetLowering &TLI, SDValue V) {
   bool Masked = false;
 
@@ -3254,21 +3256,19 @@ static SDValue combineCarryDiamond(SelectionDAG &DAG, const TargetLowering &TLI,
   SDValue CarryIn = Carry1.getOperand(CarryInOperandNum);
 
   unsigned NewOp = Opcode == ISD::UADDO ? ISD::ADDCARRY : ISD::SUBCARRY;
-  if (!TLI.isOperationLegalOrCustom(NewOp, Carry0.getValue(0).getValueType()))
+  EVT VT = Carry0.getValue(0).getValueType();
+  if (!TLI.isOperationLegalOrCustom(NewOp, VT))
     return SDValue();
 
   // Verify that the carry/borrow in is plausibly a carry/borrow bit.
-  // TODO: make getAsCarry() aware of how partial carries are merged.
-  if (CarryIn.getOpcode() != ISD::ZERO_EXTEND)
-    return SDValue();
-  CarryIn = CarryIn.getOperand(0);
-  if (CarryIn.getValueType() != MVT::i1)
+  CarryIn = getAsCarry(TLI, CarryIn);
+  if (!CarryIn)
     return SDValue();
 
   SDLoc DL(N);
   SDValue Merged =
-      DAG.getNode(NewOp, DL, Carry1->getVTList(), Carry0.getOperand(0),
-                  Carry0.getOperand(1), CarryIn);
+      DAG.getNode(NewOp, DL, DAG.getVTList(VT, CarryIn.getValueType()),
+                  Carry0.getOperand(0), Carry0.getOperand(1), CarryIn);
 
   // Please note that because we have proven that the result of the UADDO/USUBO
   // of A and B feeds into the UADDO/USUBO that does the carry/borrow in, we can
@@ -3285,7 +3285,7 @@ static SDValue combineCarryDiamond(SelectionDAG &DAG, const TargetLowering &TLI,
   // TODO: match other operations that can merge flags (ADD, etc)
   DAG.ReplaceAllUsesOfValueWith(Carry1.getValue(0), Merged.getValue(0));
   if (N->getOpcode() == ISD::AND)
-    return DAG.getConstant(0, DL, MVT::i1);
+    return DAG.getConstant(0, DL, CarryIn.getValueType());
   return Merged.getValue(1);
 }
 
