@@ -296,9 +296,9 @@ entry:
 define i64 @foo18_overflow3(i1 %cmp) nounwind readnone optsize ssp {
 ; CHECK-LABEL: foo18_overflow3:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    mov x8, #-9223372036854775808 
-; CHECK-NEXT:    tst w0, #0x1 
-; CHECK-NEXT:    csel x0, x8, xzr, ne 
+; CHECK-NEXT:    mov x8, #-9223372036854775808
+; CHECK-NEXT:    tst w0, #0x1
+; CHECK-NEXT:    csel x0, x8, xzr, ne
 ; CHECK-NEXT:    ret
 entry:
   %. = select i1 %cmp, i64 -9223372036854775808, i64 0
@@ -309,9 +309,9 @@ entry:
 define i64 @foo18_overflow4(i1 %cmp) nounwind readnone optsize ssp {
 ; CHECK-LABEL: foo18_overflow4:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    mov x8, #-9223372036854775808 
-; CHECK-NEXT:    tst w0, #0x1 
-; CHECK-NEXT:    csel x0, xzr, x8, ne 
+; CHECK-NEXT:    mov x8, #-9223372036854775808
+; CHECK-NEXT:    tst w0, #0x1
+; CHECK-NEXT:    csel x0, xzr, x8, ne
 ; CHECK-NEXT:    ret
 entry:
   %. = select i1 %cmp, i64 0, i64 -9223372036854775808
@@ -322,7 +322,9 @@ define i64 @foo19(i64 %a, i64 %b, i64 %c) {
 ; CHECK-LABEL: foo19:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cmp x0, x1
-; CHECK-NEXT:    cinc x0, x2, lo
+; CHECK-NEXT:    cset w8, lo
+; CHECK-NEXT:    cmp w8, #1
+; CHECK-NEXT:    cinc x0, x2, hs
 ; CHECK-NEXT:    ret
 entry:
   %cmp = icmp ult i64 %a, %b

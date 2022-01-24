@@ -2765,17 +2765,30 @@ static SDValue getAsCarry(const TargetLowering &TLI, SDValue V) {
     break;
   }
 
-  // If this is not a carry, return.
-  if (V.getResNo() != 1)
-    return SDValue();
+  switch (V.getOpcode()) {
+  case ISD::ADDCARRY:
+  case ISD::SUBCARRY:
+  case ISD::UADDO:
+  case ISD::USUBO: {
+    // If this is not a carry, return.
+    if (V.getResNo() != 1)
+      return SDValue();
 
-  if (V.getOpcode() != ISD::ADDCARRY && V.getOpcode() != ISD::SUBCARRY &&
-      V.getOpcode() != ISD::UADDO && V.getOpcode() != ISD::USUBO)
+    EVT VT = V.getNode()->getValueType(0);
+    if (!TLI.isOperationLegalOrCustom(V.getOpcode(), VT))
+      return SDValue();
+    break;
+  }
+  case ISD::SETCC: {
+    // Consider SETULT which affects carry flag only.
+    ISD::CondCode CC = cast<CondCodeSDNode>(V.getOperand(2))->get();
+    if (CC != ISD::SETULT)
+      return SDValue();
+    break;
+  }
+  default:
     return SDValue();
-
-  EVT VT = V->getValueType(0);
-  if (!TLI.isOperationLegalOrCustom(V.getOpcode(), VT))
-    return SDValue();
+  }
 
   // If the result is masked, then no matter what kind of bool it is we can
   // return. If it isn't, then we need to make sure the bool type is either 0 or
