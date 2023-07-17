@@ -3,7 +3,7 @@
 
 define i64 @add_select(i1 %cond, i64 %x, i64 %y) {
 ; CHECK-LABEL: @add_select(
-; CHECK-NEXT:    [[ADD:%.*]] = select i1 [[COND:%.*]], i64 [[Y:%.*]], i64 0
+; CHECK-NEXT:    [[ADD:%.*]] = select i1 [[COND:%.*]], i64 [[Y:%.*]], i64 0, !unpredictable [[META0:![0-9]+]]
 ; CHECK-NEXT:    [[RET:%.*]] = add i64 [[ADD]], [[X:%.*]]
 ; CHECK-NEXT:    ret i64 [[RET]]
 ;
