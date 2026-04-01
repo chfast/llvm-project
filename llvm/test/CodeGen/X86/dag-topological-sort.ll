@@ -56,3 +56,41 @@ define <4 x float> @load_float4_float3_as_float2_float(ptr nocapture readonly de
   %9 = insertelement <4 x float> %6, float %8, i32 2
   ret <4 x float> %9
 }
+
+; Carry diamond: topological sorting can cause the carry-in to be absorbed
+; into uaddo_carry(sum, 0, carry) before combineCarryDiamond sees the OR.
+; Both orderings should produce add+adc.
+define { i64, i64, i1 } @carry_diamond(i64 %x0, i64 %x1, i64 %y0, i64 %y1) nounwind {
+; DEFAULT-LABEL: carry_diamond:
+; DEFAULT:       # %bb.0:
+; DEFAULT-NEXT:    movq %rdi, %rax
+; DEFAULT-NEXT:    addq %rdx, %rax
+; DEFAULT-NEXT:    adcq %rcx, %rsi
+; DEFAULT-NEXT:    setb %cl
+; DEFAULT-NEXT:    movq %rsi, %rdx
+; DEFAULT-NEXT:    retq
+;
+; TOPOLOGICAL-LABEL: carry_diamond:
+; TOPOLOGICAL:       # %bb.0:
+; TOPOLOGICAL-NEXT:    movq %rdi, %rax
+; TOPOLOGICAL-NEXT:    addq %rdx, %rax
+; TOPOLOGICAL-NEXT:    adcq %rcx, %rsi
+; TOPOLOGICAL-NEXT:    setb %cl
+; TOPOLOGICAL-NEXT:    movq %rsi, %rdx
+; TOPOLOGICAL-NEXT:    retq
+  %t0 = call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %x0, i64 %y0)
+  %s0 = extractvalue { i64, i1 } %t0, 0
+  %k0 = extractvalue { i64, i1 } %t0, 1
+  %t1 = call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %x1, i64 %y1)
+  %s1 = extractvalue { i64, i1 } %t1, 0
+  %k1 = extractvalue { i64, i1 } %t1, 1
+  %zk0 = zext i1 %k0 to i64
+  %t2 = call { i64, i1 } @llvm.uadd.with.overflow.i64(i64 %s1, i64 %zk0)
+  %s2 = extractvalue { i64, i1 } %t2, 0
+  %k2 = extractvalue { i64, i1 } %t2, 1
+  %k = or i1 %k1, %k2
+  %r0 = insertvalue { i64, i64, i1 } poison, i64 %s0, 0
+  %r1 = insertvalue { i64, i64, i1 } %r0, i64 %s2, 1
+  %r = insertvalue { i64, i64, i1 } %r1, i1 %k, 2
+  ret { i64, i64, i1 } %r
+}

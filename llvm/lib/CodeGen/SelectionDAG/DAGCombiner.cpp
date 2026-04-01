@@ -3827,9 +3827,25 @@ static SDValue combineCarryDiamond(SelectionDAG &DAG, const TargetLowering &TLI,
   if (!Carry1)
     return SDValue();
 
+  // Both carries must be from add/sub overflow ops of the same kind.
+  // Also handle UADDO_CARRY/USUBO_CARRY(X, 0, C) which is equivalent to
+  // UADDO/USUBO(X, C) for carry diamond purposes — this arises when the
+  // carry-in is absorbed early (e.g. due to combiner topological sorting).
   unsigned Opcode = Carry0.getOpcode();
-  if (Opcode != Carry1.getOpcode())
-    return SDValue();
+  if (Opcode != Carry1.getOpcode()) {
+    // Canonicalize: Carry0 = UADDO/USUBO, Carry1 = UADDO_CARRY/USUBO_CARRY.
+    if (Carry1.getOpcode() == ISD::UADDO || Carry1.getOpcode() == ISD::USUBO)
+      std::swap(Carry0, Carry1);
+    Opcode = Carry0.getOpcode();
+    unsigned CarryOpc =
+        Opcode == ISD::UADDO ? ISD::UADDO_CARRY : ISD::USUBO_CARRY;
+    if (Carry1.getOpcode() != CarryOpc ||
+        !isNullConstant(Carry1.getOperand(1)) ||
+        Carry1.getOperand(0) != Carry0.getValue(0))
+      return SDValue();
+    // Matched: Carry1 = _CARRY(Carry0:0, 0, carry_in).
+    // Fall through — the carry_in extraction below handles both variants.
+  }
   if (Opcode != ISD::UADDO && Opcode != ISD::USUBO)
     return SDValue();
   // Guarantee identical type of CarryOut
@@ -3838,22 +3854,35 @@ static SDValue combineCarryDiamond(SelectionDAG &DAG, const TargetLowering &TLI,
       CarryOutType != Carry1.getValue(1).getValueType())
     return SDValue();
 
-  // Canonicalize the add/sub of A and B (the top node in the above ASCII art)
-  // as Carry0 and the add/sub of the carry in as Carry1 (the middle node).
-  if (Carry1.getNode()->isOperandOf(Carry0.getNode()))
-    std::swap(Carry0, Carry1);
+  // Extract the carry-in value from Carry1.
+  SDValue CarryIn;
+  if (Carry1.getOpcode() == Opcode) {
+    // Standard diamond: both UADDO or both USUBO.
+    // This is the pattern seen with the default (root-to-leaf) combine order,
+    // where the OR is visited before the inner UADDO is absorbed.
+    // Canonicalize Carry0 as the top node and Carry1 as the middle node.
+    if (Carry1.getNode()->isOperandOf(Carry0.getNode()))
+      std::swap(Carry0, Carry1);
 
-  // Check if nodes are connected in expected way.
-  if (Carry1.getOperand(0) != Carry0.getValue(0) &&
-      Carry1.getOperand(1) != Carry0.getValue(0))
-    return SDValue();
+    // Check if nodes are connected in expected way.
+    if (Carry1.getOperand(0) != Carry0.getValue(0) &&
+        Carry1.getOperand(1) != Carry0.getValue(0))
+      return SDValue();
 
-  // The carry in value must be on the righthand side for subtraction.
-  unsigned CarryInOperandNum =
-      Carry1.getOperand(0) == Carry0.getValue(0) ? 1 : 0;
-  if (Opcode == ISD::USUBO && CarryInOperandNum != 1)
-    return SDValue();
-  SDValue CarryIn = Carry1.getOperand(CarryInOperandNum);
+    // The carry in value must be on the righthand side for subtraction.
+    unsigned CarryInOperandNum =
+        Carry1.getOperand(0) == Carry0.getValue(0) ? 1 : 0;
+    if (Opcode == ISD::USUBO && CarryInOperandNum != 1)
+      return SDValue();
+    CarryIn = Carry1.getOperand(CarryInOperandNum);
+  } else {
+    // Absorbed diamond: Carry1 = _CARRY(Carry0:0, 0, carry_in).
+    // Already validated above.
+    // This is the pattern seen with topological (leaf-to-root) combine order,
+    // where uaddo(sum, zext(carry)) is absorbed into uaddo_carry(sum, 0, carry)
+    // before the OR-level diamond combine runs.
+    CarryIn = Carry1.getOperand(2);
+  }
 
   unsigned NewOp = Opcode == ISD::UADDO ? ISD::UADDO_CARRY : ISD::USUBO_CARRY;
   if (!TLI.isOperationLegalOrCustom(NewOp, Carry0.getValue(0).getValueType()))
