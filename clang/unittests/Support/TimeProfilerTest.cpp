@@ -186,8 +186,7 @@ std::string buildTraceGraph(StringRef Json) {
 
 } // namespace
 
-// FIXME: Flaky test. See https://github.com/llvm/llvm-project/pull/138613
-TEST(TimeProfilerTest, DISABLED_ConstantEvaluationCxx20) {
+TEST(TimeProfilerTest, ConstantEvaluationCxx20) {
   std::string Code = R"(
 void print(double value);
 
@@ -230,10 +229,11 @@ ExecuteCompiler
 | | | | EvaluateAsRValue (<test.cc:9:14>)
 | | | | EvaluateForOverflow (<test.cc:9:9, col:14>)
 | | | | isPotentialConstantExpr (slow_namespace::slow_func)
-| | | | EvaluateAsBooleanCondition (<test.cc:8:21, col:25>)
-| | | | | EvaluateAsRValue (<test.cc:8:21, col:25>)
-| | | | EvaluateAsBooleanCondition (<test.cc:8:21, col:25>)
-| | | | | EvaluateAsRValue (<test.cc:8:21, col:25>)
+| | | | BuildCFG
+| | | | | EvaluateAsBooleanCondition (<test.cc:8:21, col:25>)
+| | | | | | EvaluateAsRValue (<test.cc:8:21, col:25>)
+| | | | | EvaluateAsBooleanCondition (<test.cc:8:21, col:25>)
+| | | | | | EvaluateAsRValue (<test.cc:8:21, col:25>)
 | | ParseDeclarationOrFunctionDefinition (test.cc:16:1)
 | | | ParseFunctionDefinition (slow_test)
 | | | | EvaluateAsInitializer (slow_value)
