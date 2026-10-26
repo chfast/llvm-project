@@ -7343,6 +7343,18 @@ static bool hasUndefRegUpdate(unsigned Opcode, unsigned OpNum,
   case X86::VMOVSSZrrkz:
   case X86::VMOVSDZrrkz:
     return OpNum == 2 && !ForLoadFold;
+  case X86::BSF32rr:
+  case X86::BSF32rm:
+  case X86::BSF64rr:
+  case X86::BSF64rm:
+  case X86::BSR32rr:
+  case X86::BSR32rm:
+  case X86::BSR64rr:
+  case X86::BSR64rm:
+    // The destination is kept for a zero source, so the CPU reads it through
+    // the tied fallback operand. The memory forms have the same operand, so
+    // load folding does not need to be blocked.
+    return OpNum == 1 && !ForLoadFold;
   }
 
   return false;

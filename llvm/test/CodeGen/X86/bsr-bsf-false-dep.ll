@@ -10,6 +10,7 @@ define i64 @ctlz64_after_load(ptr %p, ptr %q, i64 %x) nounwind {
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    movq (%rsi), %rax
 ; CHECK-NEXT:    movq %rax, (%rdi)
+; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    bsrq %rdx, %rax
 ; CHECK-NEXT:    xorq $63, %rax
 ; CHECK-NEXT:    retq
@@ -24,6 +25,7 @@ define i32 @ctlz32_after_load(ptr %p, ptr %q, i32 %x) nounwind {
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    movl (%rsi), %eax
 ; CHECK-NEXT:    movl %eax, (%rdi)
+; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    bsrl %edx, %eax
 ; CHECK-NEXT:    xorl $31, %eax
 ; CHECK-NEXT:    retq
@@ -38,6 +40,7 @@ define i64 @cttz64_after_load(ptr %p, ptr %q, i64 %x) nounwind {
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    movq (%rsi), %rax
 ; CHECK-NEXT:    movq %rax, (%rdi)
+; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    rep bsfq %rdx, %rax
 ; CHECK-NEXT:    retq
   %v = load i64, ptr %q
@@ -51,6 +54,7 @@ define i32 @cttz32_after_load(ptr %p, ptr %q, i32 %x) nounwind {
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    movl (%rsi), %eax
 ; CHECK-NEXT:    movl %eax, (%rdi)
+; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    rep bsfl %edx, %eax
 ; CHECK-NEXT:    retq
   %v = load i32, ptr %q
@@ -64,6 +68,7 @@ define i64 @ctlz64_mem_after_load(ptr %p, ptr %q, ptr %s) nounwind {
 ; CHECK:       # %bb.0:
 ; CHECK-NEXT:    movq (%rsi), %rax
 ; CHECK-NEXT:    movq %rax, (%rdi)
+; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    bsrq (%rdx), %rax
 ; CHECK-NEXT:    xorq $63, %rax
 ; CHECK-NEXT:    retq
@@ -97,6 +102,7 @@ define i64 @ctlz64_loop(ptr %p, i64 %n) nounwind {
 ; CHECK-NEXT:    .p2align 4
 ; CHECK-NEXT:  .LBB6_1: # %loop
 ; CHECK-NEXT:    # =>This Inner Loop Header: Depth=1
+; CHECK-NEXT:    xorl %ecx, %ecx
 ; CHECK-NEXT:    bsrq (%rdi), %rcx
 ; CHECK-NEXT:    xorq $63, %rcx
 ; CHECK-NEXT:    addq %rcx, %rax

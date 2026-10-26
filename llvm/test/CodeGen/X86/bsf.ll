@@ -189,6 +189,7 @@ define i64 @cmov_bsf64(i64 %x, i64 %y) nounwind {
 ; X86-NEXT:    testl %esi, %esi
 ; X86-NEXT:    jne .LBB6_3
 ; X86-NEXT:  # %bb.4: # %cond.false
+; X86-NEXT:    xorl %eax, %eax
 ; X86-NEXT:    rep bsfl %ecx, %eax
 ; X86-NEXT:    addl $32, %eax
 ; X86-NEXT:    jmp .LBB6_5
@@ -196,6 +197,7 @@ define i64 @cmov_bsf64(i64 %x, i64 %y) nounwind {
 ; X86-NEXT:    movl $64, %eax
 ; X86-NEXT:    jmp .LBB6_5
 ; X86-NEXT:  .LBB6_3:
+; X86-NEXT:    xorl %eax, %eax
 ; X86-NEXT:    rep bsfl %esi, %eax
 ; X86-NEXT:  .LBB6_5: # %cond.end
 ; X86-NEXT:    xorl %edx, %edx
@@ -241,6 +243,7 @@ define i64 @cmov_bsf64_undef(i64 %x, i64 %y) nounwind {
 ; X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
 ; X86-NEXT:    retl
 ; X86-NEXT:  .LBB7_2:
+; X86-NEXT:    xorl %eax, %eax
 ; X86-NEXT:    rep bsfl %ecx, %eax
 ; X86-NEXT:    xorl %edx, %edx
 ; X86-NEXT:    retl
@@ -280,21 +283,25 @@ define i128 @cmov_bsf128(i128 %x, i128 %y) nounwind {
 ; X86-NEXT:    testl %esi, %esi
 ; X86-NEXT:    jne .LBB8_3
 ; X86-NEXT:  # %bb.4: # %cond.false
+; X86-NEXT:    xorl %ebx, %ebx
 ; X86-NEXT:    rep bsfl %edi, %ebx
 ; X86-NEXT:    addl $32, %ebx
 ; X86-NEXT:    testl %edx, %edx
 ; X86-NEXT:    je .LBB8_7
 ; X86-NEXT:  .LBB8_6:
+; X86-NEXT:    xorl %ecx, %ecx
 ; X86-NEXT:    rep bsfl %edx, %ecx
 ; X86-NEXT:    jmp .LBB8_8
 ; X86-NEXT:  .LBB8_1:
 ; X86-NEXT:    movl $128, %ebx
 ; X86-NEXT:    jmp .LBB8_11
 ; X86-NEXT:  .LBB8_3:
+; X86-NEXT:    xorl %ebx, %ebx
 ; X86-NEXT:    rep bsfl %esi, %ebx
 ; X86-NEXT:    testl %edx, %edx
 ; X86-NEXT:    jne .LBB8_6
 ; X86-NEXT:  .LBB8_7: # %cond.false
+; X86-NEXT:    xorl %ecx, %ecx
 ; X86-NEXT:    rep bsfl 36(%ebp), %ecx
 ; X86-NEXT:    addl $32, %ecx
 ; X86-NEXT:  .LBB8_8: # %cond.false
@@ -339,6 +346,7 @@ define i128 @cmov_bsf128(i128 %x, i128 %y) nounwind {
 ; X64-NEXT:    orq %rsi, %rax
 ; X64-NEXT:    je .LBB8_2
 ; X64-NEXT:  # %bb.1: # %select.false.sink
+; X64-NEXT:    xorl %ecx, %ecx
 ; X64-NEXT:    rep bsfq %rdi, %rcx
 ; X64-NEXT:    movl $64, %eax
 ; X64-NEXT:    rep bsfq %rsi, %rax
@@ -382,11 +390,13 @@ define i128 @cmov_bsf128_undef(i128 %x, i128 %y) nounwind {
 ; X86-NEXT:    testl %edx, %edx
 ; X86-NEXT:    jne .LBB9_2
 ; X86-NEXT:  # %bb.3: # %select.true.sink
+; X86-NEXT:    xorl %esi, %esi
 ; X86-NEXT:    rep bsfl %ecx, %esi
 ; X86-NEXT:    addl $32, %esi
 ; X86-NEXT:    testl %ebx, %ebx
 ; X86-NEXT:    je .LBB9_6
 ; X86-NEXT:  .LBB9_5:
+; X86-NEXT:    xorl %edi, %edi
 ; X86-NEXT:    rep bsfl %ebx, %edi
 ; X86-NEXT:    orl %ecx, %edx
 ; X86-NEXT:    je .LBB9_8
@@ -402,6 +412,7 @@ define i128 @cmov_bsf128_undef(i128 %x, i128 %y) nounwind {
 ; X86-NEXT:    movl %ecx, 12(%eax)
 ; X86-NEXT:    jmp .LBB9_10
 ; X86-NEXT:  .LBB9_2:
+; X86-NEXT:    xorl %esi, %esi
 ; X86-NEXT:    rep bsfl %edx, %esi
 ; X86-NEXT:    testl %ebx, %ebx
 ; X86-NEXT:    jne .LBB9_5
@@ -432,7 +443,9 @@ define i128 @cmov_bsf128_undef(i128 %x, i128 %y) nounwind {
 ; X64-NEXT:    orq %rsi, %rax
 ; X64-NEXT:    je .LBB9_2
 ; X64-NEXT:  # %bb.1: # %select.true.sink
+; X64-NEXT:    xorl %ecx, %ecx
 ; X64-NEXT:    rep bsfq %rdi, %rcx
+; X64-NEXT:    xorl %eax, %eax
 ; X64-NEXT:    rep bsfq %rsi, %rax
 ; X64-NEXT:    addq $64, %rax
 ; X64-NEXT:    testq %rdi, %rdi
